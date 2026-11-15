@@ -1,0 +1,93 @@
+table dim_sellers
+	lineageTag: 5d758cf1-e1cc-49f0-b203-2d7da848d47d
+
+	measure 'Total Sellers' =
+			
+			DISTINCTCOUNT ( fact_order_items[seller_id] )
+		formatString: #,0
+		displayFolder: 5. Sellers
+		lineageTag: 2dc4bf00-e266-43b3-b074-16d20ee51034
+
+	measure 'Sales per Seller' = DIVIDE ( [Total Sales], [Total Sellers] )
+		formatString: "R$"\ #,0.00;-"R$"\ #,0.00;"R$"\ #,0.00
+		displayFolder: 5. Sellers
+		lineageTag: 365348a9-29a8-46cc-84e2-87d1e3b47536
+
+	measure 'Orders per Seller' = DIVIDE ( [Total Orders], [Total Sellers] )
+		formatString: #,0.0
+		displayFolder: 5. Sellers
+		lineageTag: 2eb0242c-ae07-4a0f-a3fc-63ddb0376555
+
+	column seller_id
+		dataType: string
+		lineageTag: fff68e39-1b85-44f2-a905-1ddc478c00ee
+		summarizeBy: none
+		sourceColumn: seller_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column seller_zip_code_prefix
+		dataType: int64
+		formatString: 0
+		lineageTag: 72b79817-4319-4ac3-9d4f-b6a026256593
+		summarizeBy: none
+		sourceColumn: seller_zip_code_prefix
+
+		annotation SummarizationSetBy = Automatic
+
+	column seller_city
+		dataType: string
+		lineageTag: dd0da094-3721-44da-a784-7d37f6ba8db4
+		summarizeBy: none
+		sourceColumn: seller_city
+
+		annotation SummarizationSetBy = Automatic
+
+	column seller_state
+		dataType: string
+		lineageTag: 12b45ed8-3c35-42f5-8e25-948f794b9b47
+		summarizeBy: none
+		sourceColumn: seller_state
+
+		annotation SummarizationSetBy = Automatic
+
+	column seller_city_name = VAR t = dim_sellers[seller_city] RETURN IF ( ISBLANK ( t ) || t = "", "Unknown", CONCATENATEX ( GENERATESERIES ( 1, LEN ( t ) ), VAR i = [Value] VAR c = MID ( t, i, 1 ) RETURN IF ( MID ( " " & t, i, 1 ) = " ", UPPER ( c ), LOWER ( c ) ), "", [Value], ASC ) )
+		dataType: string
+		displayFolder: Names
+		lineageTag: b00334e3-572f-4ee1-899e-e64f6a56243b
+		summarizeBy: none
+
+	column seller_state_name = SWITCH ( dim_sellers[seller_state], "AC", "Acre", "AL", "Alagoas", "AP", "Amapa", "AM", "Amazonas", "BA", "Bahia", "CE", "Ceara", "DF", "Distrito Federal", "ES", "Espirito Santo", "GO", "Goias", "MA", "Maranhao", "MT", "Mato Grosso", "MS", "Mato Grosso do Sul", "MG", "Minas Gerais", "PA", "Para", "PB", "Paraiba", "PR", "Parana", "PE", "Pernambuco", "PI", "Piaui", "RJ", "Rio de Janeiro", "RN", "Rio Grande do Norte", "RS", "Rio Grande do Sul", "RO", "Rondonia", "RR", "Roraima", "SC", "Santa Catarina", "SP", "Sao Paulo", "SE", "Sergipe", "TO", "Tocantins", BLANK () )
+		dataType: string
+		displayFolder: Geo
+		lineageTag: 4f545e45-a80f-4144-aa7c-b5dca77bb354
+		dataCategory: StateOrProvince
+		summarizeBy: none
+
+	column seller_lat = SWITCH ( dim_sellers[seller_state], "AC", -9.0, "AL", -9.6, "AP", 1.4, "AM", -4.2, "BA", -12.5, "CE", -5.3, "DF", -15.8, "ES", -19.6, "GO", -15.9, "MA", -5.0, "MT", -12.7, "MS", -20.5, "MG", -18.5, "PA", -3.8, "PB", -7.2, "PR", -24.6, "PE", -8.4, "PI", -7.7, "RJ", -22.3, "RN", -5.8, "RS", -29.8, "RO", -10.9, "RR", 2.0, "SC", -27.3, "SP", -22.3, "SE", -10.6, "TO", -10.2, BLANK () )
+		dataType: double
+		displayFolder: Geo
+		lineageTag: fad81269-deda-47ff-bb46-8c9a83d88526
+		dataCategory: Latitude
+		summarizeBy: average
+
+	column seller_lon = SWITCH ( dim_sellers[seller_state], "AC", -70.5, "AL", -36.6, "AP", -51.8, "AM", -64.6, "BA", -41.7, "CE", -39.3, "DF", -47.9, "ES", -40.6, "GO", -49.8, "MA", -45.3, "MT", -55.9, "MS", -54.8, "MG", -44.6, "PA", -52.5, "PB", -36.8, "PR", -51.6, "PE", -37.9, "PI", -42.7, "RJ", -42.7, "RN", -36.6, "RS", -53.3, "RO", -63.0, "RR", -61.4, "SC", -50.5, "SP", -48.7, "SE", -37.4, "TO", -48.3, BLANK () )
+		dataType: double
+		displayFolder: Geo
+		lineageTag: 63922175-609d-4b87-a777-352478bf8532
+		dataCategory: Longitude
+		summarizeBy: average
+
+	partition dim_sellers = m
+		mode: import
+		source =
+				let
+				    Source = GoogleBigQuery.Database([Implementation="2.0"]),
+				    #"angelic-digit-481505-r7_Database" = Source{[Name="angelic-digit-481505-r7",Kind="Database"]}[Data],
+				    olist_analytics_Schema = #"angelic-digit-481505-r7_Database"{[Name="olist_analytics",Kind="Schema"]}[Data],
+				    dim_sellers_Table = olist_analytics_Schema{[Name="dim_sellers",Kind="Table"]}[Data]
+				in
+				    dim_sellers_Table
+
+	annotation PBI_ResultType = Table
+

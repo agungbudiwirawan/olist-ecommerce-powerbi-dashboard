@@ -1,0 +1,172 @@
+table dim_customers
+	lineageTag: b6e99e93-5124-4521-866e-e976a9982654
+
+	/// Unique customers who ordered in the current selection. Now responds to date, product and seller filters.
+	measure 'Total Customers' = COUNTROWS ( SUMMARIZE ( fact_order_items, dim_customers[customer_unique_id] ) )
+		formatString: #,0
+		displayFolder: 3. Customers
+		lineageTag: f7b05423-cc9d-43b7-a7a4-7f725fdf4016
+
+	/// Customers with more than one order in the current selection.
+	measure 'Repeat Customers' =
+			VAR t =
+			    ADDCOLUMNS (
+			        SUMMARIZE ( fact_order_items, dim_customers[customer_unique_id] ),
+			        "@orders", CALCULATE ( DISTINCTCOUNT ( fact_order_items[order_id] ) )
+			    )
+			RETURN COUNTROWS ( FILTER ( t, [@orders] > 1 ) ) + 0
+		formatString: #,0
+		displayFolder: 3. Customers
+		lineageTag: 2d28f3b8-e3ab-4105-a2f2-ddf28dfc8a16
+
+	measure 'Repeat Customer Rate %' = DIVIDE ( [Repeat Customers], [Total Customers] )
+		formatString: 0.00%
+		displayFolder: 3. Customers
+		lineageTag: fd80fc7c-1b18-4e01-8207-b5f720399260
+
+	/// Customers whose first-ever order falls in the selected period.
+	measure 'New Customers' =
+			VAR s = MIN ( dim_date[date] )
+			VAR e = MAX ( dim_date[date] )
+			RETURN
+			    COUNTROWS (
+			        FILTER (
+			            SUMMARIZE ( fact_order_items, dim_customers[customer_unique_id], dim_customers[first_order_date] ),
+			            dim_customers[first_order_date] >= s && dim_customers[first_order_date] <= e
+			        )
+			    ) + 0
+		formatString: #,0
+		displayFolder: 3. Customers
+		lineageTag: 26d7bd44-ef32-40c5-83ea-68effd7f41f1
+
+	measure 'Returning Customers' = [Total Customers] - [New Customers]
+		formatString: #,0
+		displayFolder: 3. Customers
+		lineageTag: c993d7a4-deb1-4630-ac58-80ad39277601
+
+	measure 'Orders per Customer' = DIVIDE ( [Total Orders], [Total Customers] )
+		formatString: 0.000
+		displayFolder: 3. Customers
+		lineageTag: 96b61abe-21bf-4136-a28b-288bbbc559f9
+
+	measure 'Sales per Customer' = DIVIDE ( [Total Sales], [Total Customers] )
+		formatString: "R$"\ #,0.00;-"R$"\ #,0.00;"R$"\ #,0.00
+		displayFolder: 3. Customers
+		lineageTag: 1bb536c2-7f62-4971-8c54-3ce0975ab973
+
+	measure 'Customers PY' = CALCULATE ( [Total Customers], SAMEPERIODLASTYEAR ( dim_date[date] ) )
+		formatString: #,0
+		displayFolder: 3. Customers
+		lineageTag: 2bbd959a-044a-4818-aad2-328876799980
+
+	measure 'Customers YoY %' =
+			VAR py = [Customers PY]
+			RETURN IF ( NOT ISBLANK ( py ), DIVIDE ( [Total Customers] - py, py ) )
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: 3. Customers
+		lineageTag: b08b7db6-17bc-47fc-bffb-6d6828beec7a
+
+	measure 'Customers YoY Label' =
+			VAR v = [Customers YoY %]
+			RETURN IF ( NOT HASONEVALUE ( dim_date[year] ), "Select a year to compare YoY", IF ( ISBLANK ( v ), "No prior-year data", IF ( v >= 0, "▲ ", "▼ " ) & FORMAT ( ABS ( v ), "0.0%" ) & " vs prior year" ) )
+		displayFolder: 9. Labels
+		lineageTag: c5dd1021-f865-4ade-bd65-66d375c2dccd
+
+	measure 'Customers YoY Color' =
+			VAR v = [Customers YoY %]
+			RETURN SWITCH ( TRUE (), NOT HASONEVALUE ( dim_date[year] ) || ISBLANK ( v ), "#64748B", v >= 0, "#059669", "#DC2626" )
+		displayFolder: 9. Labels
+		lineageTag: e9c3be30-4ce6-4585-9f54-651dd881e785
+
+	measure 'Repeat Rate Label' = FORMAT ( [Repeat Customer Rate %], "0.00%" ) & " repeat rate"
+		displayFolder: 9. Labels
+		lineageTag: 85e9b34a-f060-4705-b1fb-e6301f96132a
+
+	column customer_id
+		dataType: string
+		lineageTag: 5e7bd740-3321-4aee-85ad-6e9cf206117b
+		summarizeBy: none
+		sourceColumn: customer_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column customer_unique_id
+		dataType: string
+		lineageTag: 51ed6fbd-451c-416e-b77d-d201f8c43168
+		summarizeBy: none
+		sourceColumn: customer_unique_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column customer_zip_code_prefix
+		dataType: int64
+		formatString: 0
+		lineageTag: 73ae99c3-6f6e-438c-be98-f2ce99982c6c
+		summarizeBy: none
+		sourceColumn: customer_zip_code_prefix
+
+		annotation SummarizationSetBy = Automatic
+
+	column customer_city
+		dataType: string
+		lineageTag: 003ad8a5-7f31-4a4d-8932-32598deb9482
+		summarizeBy: none
+		sourceColumn: customer_city
+
+		annotation SummarizationSetBy = Automatic
+
+	column customer_state
+		dataType: string
+		lineageTag: 57f2a0ae-5857-4d73-b27c-a0cfa1d6df67
+		summarizeBy: none
+		sourceColumn: customer_state
+
+		annotation SummarizationSetBy = Automatic
+
+	column first_order_date = CALCULATE ( MIN ( fact_order_items[order_date] ), ALLEXCEPT ( dim_customers, dim_customers[customer_unique_id] ) )
+		dataType: dateTime
+		isHidden
+		formatString: Short Date
+		lineageTag: d3f84a69-f54a-44bb-a53c-163739ec3733
+		summarizeBy: none
+
+	column customer_city_name = VAR t = dim_customers[customer_city] RETURN IF ( ISBLANK ( t ) || t = "", "Unknown", CONCATENATEX ( GENERATESERIES ( 1, LEN ( t ) ), VAR i = [Value] VAR c = MID ( t, i, 1 ) RETURN IF ( MID ( " " & t, i, 1 ) = " ", UPPER ( c ), LOWER ( c ) ), "", [Value], ASC ) )
+		dataType: string
+		displayFolder: Names
+		lineageTag: e4687b2b-3ec0-4b2c-bc90-ee360c625903
+		summarizeBy: none
+
+	column customer_state_name = SWITCH ( dim_customers[customer_state], "AC", "Acre", "AL", "Alagoas", "AP", "Amapa", "AM", "Amazonas", "BA", "Bahia", "CE", "Ceara", "DF", "Distrito Federal", "ES", "Espirito Santo", "GO", "Goias", "MA", "Maranhao", "MT", "Mato Grosso", "MS", "Mato Grosso do Sul", "MG", "Minas Gerais", "PA", "Para", "PB", "Paraiba", "PR", "Parana", "PE", "Pernambuco", "PI", "Piaui", "RJ", "Rio de Janeiro", "RN", "Rio Grande do Norte", "RS", "Rio Grande do Sul", "RO", "Rondonia", "RR", "Roraima", "SC", "Santa Catarina", "SP", "Sao Paulo", "SE", "Sergipe", "TO", "Tocantins", BLANK () )
+		dataType: string
+		displayFolder: Geo
+		lineageTag: 11699fcb-5446-47f6-815c-a3d9b28cc91d
+		dataCategory: StateOrProvince
+		summarizeBy: none
+
+	column customer_lat = SWITCH ( dim_customers[customer_state], "AC", -9.0, "AL", -9.6, "AP", 1.4, "AM", -4.2, "BA", -12.5, "CE", -5.3, "DF", -15.8, "ES", -19.6, "GO", -15.9, "MA", -5.0, "MT", -12.7, "MS", -20.5, "MG", -18.5, "PA", -3.8, "PB", -7.2, "PR", -24.6, "PE", -8.4, "PI", -7.7, "RJ", -22.3, "RN", -5.8, "RS", -29.8, "RO", -10.9, "RR", 2.0, "SC", -27.3, "SP", -22.3, "SE", -10.6, "TO", -10.2, BLANK () )
+		dataType: double
+		displayFolder: Geo
+		lineageTag: 807395bd-15c6-4cec-bda0-a4af569e4023
+		dataCategory: Latitude
+		summarizeBy: average
+
+	column customer_lon = SWITCH ( dim_customers[customer_state], "AC", -70.5, "AL", -36.6, "AP", -51.8, "AM", -64.6, "BA", -41.7, "CE", -39.3, "DF", -47.9, "ES", -40.6, "GO", -49.8, "MA", -45.3, "MT", -55.9, "MS", -54.8, "MG", -44.6, "PA", -52.5, "PB", -36.8, "PR", -51.6, "PE", -37.9, "PI", -42.7, "RJ", -42.7, "RN", -36.6, "RS", -53.3, "RO", -63.0, "RR", -61.4, "SC", -50.5, "SP", -48.7, "SE", -37.4, "TO", -48.3, BLANK () )
+		dataType: double
+		displayFolder: Geo
+		lineageTag: fee70b81-34fe-4a1a-833c-3bde194495bb
+		dataCategory: Longitude
+		summarizeBy: average
+
+	partition dim_customers = m
+		mode: import
+		source =
+				let
+				    Source = GoogleBigQuery.Database([Implementation="2.0"]),
+				    #"angelic-digit-481505-r7_Database" = Source{[Name="angelic-digit-481505-r7",Kind="Database"]}[Data],
+				    olist_analytics_Schema = #"angelic-digit-481505-r7_Database"{[Name="olist_analytics",Kind="Schema"]}[Data],
+				    dim_customers_Table = olist_analytics_Schema{[Name="dim_customers",Kind="Table"]}[Data]
+				in
+				    dim_customers_Table
+
+	annotation PBI_ResultType = Table
+

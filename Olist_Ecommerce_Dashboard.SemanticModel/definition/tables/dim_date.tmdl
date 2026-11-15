@@ -1,0 +1,118 @@
+table dim_date
+	lineageTag: 70fc0524-d0c4-4c77-8ef6-61ff55bb3f67
+	dataCategory: Time
+
+	column date
+		dataType: dateTime
+		isUnique
+		formatString: Long Date
+		lineageTag: df7147dd-34c6-41aa-bd3e-5e37cd66713c
+		summarizeBy: none
+		sourceColumn: date
+
+		variation Variation
+			isDefault
+			relationship: b1d951e5-ba60-4ec9-a2b2-2982a2f0b66f
+			defaultHierarchy: LocalDateTable_43e00e39-fd7e-48a4-8fb6-edbfebf62d0a.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column year
+		dataType: int64
+		formatString: 0
+		lineageTag: 960102f6-362b-431e-a8c4-7c0ef33c2811
+		summarizeBy: none
+		sourceColumn: year
+
+		annotation SummarizationSetBy = Automatic
+
+	column quarter
+		dataType: int64
+		formatString: 0
+		lineageTag: 00d768f1-f7f0-42da-a8d0-6c09063c27e0
+		summarizeBy: none
+		sourceColumn: quarter
+
+		annotation SummarizationSetBy = Automatic
+
+	column month
+		dataType: int64
+		formatString: 0
+		lineageTag: 4391eecd-45bb-4dc7-ac08-4db75ff3ec2c
+		summarizeBy: none
+		sourceColumn: month
+
+		annotation SummarizationSetBy = Automatic
+
+	column month_name
+		dataType: string
+		lineageTag: d91842f4-0049-475b-80ca-39326cb1675c
+		summarizeBy: none
+		sourceColumn: month_name
+		sortByColumn: month
+
+		annotation SummarizationSetBy = Automatic
+
+	column day
+		dataType: int64
+		formatString: 0
+		lineageTag: 71a0601a-9d93-4c6a-9b82-d03438f6bfaa
+		summarizeBy: none
+		sourceColumn: day
+
+		annotation SummarizationSetBy = Automatic
+
+	column day_of_week
+		dataType: int64
+		formatString: 0
+		lineageTag: 31a838a5-040f-4663-b6e2-d8a1e1c941db
+		summarizeBy: none
+		sourceColumn: day_of_week
+
+		annotation SummarizationSetBy = Automatic
+
+	column day_name
+		dataType: string
+		lineageTag: cca8867f-6e3b-4304-9856-d73d65163648
+		summarizeBy: none
+		sourceColumn: day_name
+		sortByColumn: day_of_week
+
+		annotation SummarizationSetBy = Automatic
+
+	column is_weekend
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: dc7af783-f97d-403a-aed0-31067fea22ea
+		summarizeBy: none
+		sourceColumn: is_weekend
+
+		annotation SummarizationSetBy = Automatic
+
+	column year_month_key = dim_date[year] * 100 + dim_date[month]
+		dataType: int64
+		isHidden
+		lineageTag: 0826bca2-1b52-4d66-8773-888b6f393086
+		summarizeBy: none
+
+	column year_month = FORMAT ( dim_date[date], "MMM yyyy" )
+		dataType: string
+		lineageTag: e0cdbe26-b70b-4e83-99de-6af7abe6f0fa
+		summarizeBy: none
+		sortByColumn: year_month_key
+
+	partition dim_date = m
+		mode: import
+		source =
+				let
+				    Source = GoogleBigQuery.Database([Implementation="2.0"]),
+				    #"angelic-digit-481505-r7_Database" = Source{[Name="angelic-digit-481505-r7",Kind="Database"]}[Data],
+				    olist_analytics_Schema = #"angelic-digit-481505-r7_Database"{[Name="olist_analytics",Kind="Schema"]}[Data],
+				    dim_date_Table = olist_analytics_Schema{[Name="dim_date",Kind="Table"]}[Data]
+				in
+				    dim_date_Table
+
+	annotation PBI_ResultType = Table
+

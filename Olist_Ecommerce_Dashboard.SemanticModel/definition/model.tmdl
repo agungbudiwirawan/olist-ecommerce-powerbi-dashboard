@@ -1,0 +1,31 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	valueFilterBehavior: independent
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation __PBI_TimeIntelligenceEnabled = 1
+
+annotation PBI_QueryOrder = ["dim_customers","dim_date","dim_products","dim_sellers","fact_order_items","fact_order_payments"]
+
+annotation PBI_ProTooling = ["MCP-PBIModeling","DevMode"]
+
+ref table dim_customers
+ref table dim_date
+ref table DateTableTemplate_701d68b8-8340-4166-83a5-4cb4b2c60ae1
+ref table LocalDateTable_43e00e39-fd7e-48a4-8fb6-edbfebf62d0a
+ref table dim_products
+ref table dim_sellers
+ref table fact_order_items
+ref table LocalDateTable_63127746-550c-4491-95ae-8a3e3d515f19
+ref table LocalDateTable_0d35f6b0-c8a3-47ae-8043-1a084b7bf24f
+ref table LocalDateTable_be1bf75d-450a-4903-b641-37f1987bf843
+ref table LocalDateTable_6d6b1a80-9773-4055-b004-94d3cb0d725b
+ref table LocalDateTable_b0b795bf-5049-49c4-8ad5-65bb17e8ceab
+ref table fact_order_payments
+
+ref cultureInfo en-US
+

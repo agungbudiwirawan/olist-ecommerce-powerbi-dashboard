@@ -1,0 +1,8 @@
+# Power BI local cache and user settings (data + machine-specific)
+**/.pbi/localSettings.json
+**/.pbi/cache.abf
+
+# OS / editor noise
+Thumbs.db
+desktop.ini
+.DS_Store

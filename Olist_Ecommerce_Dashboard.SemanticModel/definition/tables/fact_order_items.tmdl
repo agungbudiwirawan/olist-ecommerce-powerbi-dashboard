@@ -1,0 +1,626 @@
+table fact_order_items
+	lineageTag: 89121b37-7b29-4dd6-b7cc-aa52b813903e
+
+	measure 'Total Sales' = SUM(fact_order_items[price])
+		formatString: "R$"\ #,0.00;-"R$"\ #,0.00;"R$"\ #,0.00
+		displayFolder: 1. Sales
+		lineageTag: 7056f0b7-9adb-4785-b553-104c436042d2
+
+		annotation PBI_FormatHint = {"currencyCulture":"pt-BR"}
+
+	measure 'Total Freight' = SUM(fact_order_items[freight_value])
+		formatString: "R$"\ #,0.00;-"R$"\ #,0.00;"R$"\ #,0.00
+		displayFolder: 1. Sales
+		lineageTag: a49c9e1d-a2f3-401d-bc5a-f4590a03df8d
+
+		annotation PBI_FormatHint = {"currencyCulture":"pt-BR"}
+
+	measure 'Total Orders' =
+			
+			DISTINCTCOUNT(fact_order_items[order_id])
+		formatString: #,0
+		displayFolder: 1. Sales
+		lineageTag: 80b78ec6-8c60-452c-9219-f176d706ba94
+
+	measure 'Total Items' =
+			
+			COUNTROWS(fact_order_items)
+		formatString: 0
+		isHidden
+		displayFolder: 1. Sales
+		lineageTag: 332f2a43-20c0-4548-81b4-40587dc65b14
+
+	measure 'Average Order Value' =
+			
+			DIVIDE ( [Total Sales], [Total Orders], 0 )
+		formatString: "R$"\ #,0.00;-"R$"\ #,0.00;"R$"\ #,0.00
+		displayFolder: 1. Sales
+		lineageTag: 86219c05-be90-4fd9-9a3d-5c19963f1860
+
+		annotation PBI_FormatHint = {"currencyCulture":"pt-BR"}
+
+	measure 'Freight % of Sales' =
+			
+			DIVIDE ( [Total Freight], [Total Sales], 0 )
+		formatString: #,0.00%;-#,0.00%;#,0.00%
+		displayFolder: 4. Operations
+		lineageTag: e2020ca8-a49d-4e31-965a-8895c141e778
+
+	/// Items sold (one row per item). Was SUM(order_item_id), which inflated the count by ~20%.
+	measure 'Total Items Sold' = COUNTROWS ( fact_order_items )
+		formatString: #,0
+		displayFolder: 1. Sales
+		lineageTag: 0ece068a-7af0-4d9e-ac78-b685b549b8a3
+
+	measure 'Sales per Item' =
+			
+			DIVIDE ( [Total Sales], [Total Items Sold], 0 )
+		formatString: "R$"\ #,0.00;-"R$"\ #,0.00;"R$"\ #,0.00
+		displayFolder: 1. Sales
+		lineageTag: b57b8663-9fb3-4ab5-a62b-4a41a27edd0a
+
+		annotation PBI_FormatHint = {"currencyCulture":"pt-BR"}
+
+	/// Gross merchandise value = product sales + freight.
+	measure GMV = [Total Sales] + [Total Freight]
+		formatString: "R$"\ #,0.00;-"R$"\ #,0.00;"R$"\ #,0.00
+		displayFolder: 1. Sales
+		lineageTag: efe2a237-dc93-48f4-acfc-4f251a68ca51
+
+	measure 'Avg Items per Order' = DIVIDE ( [Total Items Sold], [Total Orders] )
+		formatString: 0.00
+		displayFolder: 1. Sales
+		lineageTag: b6a24018-d1c6-473e-a284-2fab061c4479
+
+	measure 'Avg Item Price' = AVERAGE ( fact_order_items[price] )
+		formatString: "R$"\ #,0.00;-"R$"\ #,0.00;"R$"\ #,0.00
+		displayFolder: 1. Sales
+		lineageTag: fdd02a34-77df-412c-8318-c88256e0b291
+
+	/// Share of sales vs all products, sellers and customers for the selected dates.
+	measure 'Sales % of Total' = DIVIDE ( [Total Sales], CALCULATE ( [Total Sales], ALL ( dim_products ), ALL ( dim_sellers ), ALL ( dim_customers ) ) )
+		formatString: 0.0%
+		displayFolder: 1. Sales
+		lineageTag: 47290d48-47a7-4b94-8af6-327fec338891
+
+	measure 'Sales PY' = CALCULATE ( [Total Sales], SAMEPERIODLASTYEAR ( dim_date[date] ) )
+		formatString: "R$"\ #,0.00;-"R$"\ #,0.00;"R$"\ #,0.00
+		displayFolder: 2. Time Intelligence
+		lineageTag: a3268d44-c50f-4566-8a3d-3a9d7902535c
+
+	measure 'Sales YoY %' =
+			VAR py = [Sales PY]
+			RETURN IF ( NOT ISBLANK ( py ), DIVIDE ( [Total Sales] - py, py ) )
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: 2. Time Intelligence
+		lineageTag: 34a44c1b-05dd-480b-9119-9d50831eb8f2
+
+	measure 'Sales PM' = CALCULATE ( [Total Sales], DATEADD ( dim_date[date], -1, MONTH ) )
+		formatString: "R$"\ #,0.00;-"R$"\ #,0.00;"R$"\ #,0.00
+		displayFolder: 2. Time Intelligence
+		lineageTag: 2a4e85a3-fe14-47d6-acab-417935b53465
+
+	measure 'Sales MoM %' =
+			VAR pm = [Sales PM]
+			RETURN IF ( NOT ISBLANK ( pm ), DIVIDE ( [Total Sales] - pm, pm ) )
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: 2. Time Intelligence
+		lineageTag: 641f2983-13a2-4c99-8af6-e0222cd11091
+
+	measure 'Sales YTD' = TOTALYTD ( [Total Sales], dim_date[date] )
+		formatString: "R$"\ #,0.00;-"R$"\ #,0.00;"R$"\ #,0.00
+		displayFolder: 2. Time Intelligence
+		lineageTag: 450029d7-64b8-4f42-b69a-a2dc8b6833d3
+
+	measure 'Orders PY' = CALCULATE ( [Total Orders], SAMEPERIODLASTYEAR ( dim_date[date] ) )
+		formatString: #,0
+		displayFolder: 2. Time Intelligence
+		lineageTag: 44f5c2e0-08d9-4b15-adfa-58afe32207d0
+
+	measure 'Orders YoY %' =
+			VAR py = [Orders PY]
+			RETURN IF ( NOT ISBLANK ( py ), DIVIDE ( [Total Orders] - py, py ) )
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: 2. Time Intelligence
+		lineageTag: 95078073-054b-4659-97a8-e1e6c715be6b
+
+	/// Average monthly sales over the last 3 months.
+	measure 'Sales 3M Moving Avg' =
+			VAR lastD = MAX ( dim_date[date] )
+			RETURN DIVIDE ( CALCULATE ( [Total Sales], DATESINPERIOD ( dim_date[date], lastD, -3, MONTH ) ), 3 )
+		formatString: "R$"\ #,0.00;-"R$"\ #,0.00;"R$"\ #,0.00
+		displayFolder: 2. Time Intelligence
+		lineageTag: ada95e25-c878-41ec-a3ba-847a1ee6674b
+
+	measure 'Delivered Orders' = CALCULATE ( COUNTROWS ( fact_order_items ), fact_order_items[order_item_id] = 1, NOT ISBLANK ( fact_order_items[delivery_days] ) )
+		formatString: #,0
+		displayFolder: 4. Operations
+		lineageTag: a55b1901-43e5-4618-877f-f208d1f91aff
+
+	/// Average days from purchase to delivery (delivered orders, one row per order).
+	measure 'Avg Delivery Days' = CALCULATE ( AVERAGE ( fact_order_items[delivery_days] ), fact_order_items[order_item_id] = 1 )
+		formatString: 0.0
+		displayFolder: 4. Operations
+		lineageTag: f8ea5b2e-1563-4be3-be7c-caeeb0fcda93
+
+	/// Average days between purchase and the delivery date promised to the customer.
+	measure 'Avg Estimated Days' = CALCULATE ( AVERAGE ( fact_order_items[estimated_days] ), fact_order_items[order_item_id] = 1 )
+		formatString: 0.0
+		displayFolder: 4. Operations
+		lineageTag: b0bc7ec7-d53b-4c68-b4cb-7f1022831dfb
+
+	/// Average days from purchase until the seller hands the order to the carrier.
+	measure 'Avg Days to Carrier' = CALCULATE ( AVERAGE ( fact_order_items[days_to_carrier] ), fact_order_items[order_item_id] = 1 )
+		formatString: 0.0
+		displayFolder: 4. Operations
+		lineageTag: b76ad9d7-4b5b-494b-a4dd-15ddc115e9b3
+
+	measure 'Late Orders' = CALCULATE ( COUNTROWS ( fact_order_items ), fact_order_items[order_item_id] = 1, fact_order_items[delivery_status] = "Late" ) + 0
+		formatString: #,0
+		displayFolder: 4. Operations
+		lineageTag: f2d16bad-e6ab-45ac-92cf-3011b637be14
+
+	measure 'Late Delivery %' = DIVIDE ( [Late Orders], [Delivered Orders] )
+		formatString: 0.0%
+		displayFolder: 4. Operations
+		lineageTag: 215757a3-c546-491a-a81f-bacbaabcadd3
+
+	measure 'On-Time Delivery %' = IF ( [Delivered Orders] > 0, 1 - [Late Delivery %] )
+		formatString: 0.0%
+		displayFolder: 4. Operations
+		lineageTag: 25558b0c-2d1e-44bf-9505-cc57c898b517
+
+	/// For late orders only: average days past the promised date.
+	measure 'Avg Days Late' = CALCULATE ( AVERAGE ( fact_order_items[days_late] ), fact_order_items[order_item_id] = 1, fact_order_items[delivery_status] = "Late" )
+		formatString: 0.0
+		displayFolder: 4. Operations
+		lineageTag: 8913ec3b-82a7-476c-a7d9-9b00a14d7d74
+
+	/// Orders counted once each, for use with delivery_status / delivery_speed_band.
+	measure 'Order Count (order-level)' = CALCULATE ( COUNTROWS ( fact_order_items ), fact_order_items[order_item_id] = 1 ) + 0
+		formatString: #,0
+		displayFolder: 4. Operations
+		lineageTag: f822920e-bb1c-4352-a471-7dd8f5dafa10
+
+	measure 'Canceled Orders' = CALCULATE ( [Total Orders], fact_order_items[order_status] IN { "canceled", "unavailable" } ) + 0
+		formatString: #,0
+		displayFolder: 4. Operations
+		lineageTag: d5c2d78d-e882-4644-981b-d0537c18852f
+
+	measure 'Cancellation Rate %' = DIVIDE ( [Canceled Orders], [Total Orders] )
+		formatString: 0.00%
+		displayFolder: 4. Operations
+		lineageTag: 8ef40d76-62bd-4d87-9d26-2ea483683968
+
+	measure 'Freight per Order' = DIVIDE ( [Total Freight], [Total Orders] )
+		formatString: "R$"\ #,0.00;-"R$"\ #,0.00;"R$"\ #,0.00
+		displayFolder: 4. Operations
+		lineageTag: 231228a5-b7ac-4477-94a1-a516bfa3817d
+
+	measure 'Data Through' = "Data: " & FORMAT ( CALCULATE ( MIN ( fact_order_items[order_date] ), ALL ( fact_order_items ) ), "MMM yyyy" ) & " – " & FORMAT ( CALCULATE ( MAX ( fact_order_items[order_date] ), ALL ( fact_order_items ) ), "MMM yyyy" ) & "  ·  Sep 2018 partial"
+		displayFolder: 9. Labels
+		lineageTag: 43d38321-d96c-4db3-b5d7-aa402dc33719
+
+	measure 'AOV PY' = CALCULATE ( [Average Order Value], SAMEPERIODLASTYEAR ( dim_date[date] ) )
+		formatString: "R$"\ #,0.00;-"R$"\ #,0.00;"R$"\ #,0.00
+		displayFolder: 2. Time Intelligence
+		lineageTag: 7ea94509-29d0-4480-bfb5-7d5aa9087511
+
+	measure 'AOV YoY %' =
+			VAR py = [AOV PY]
+			RETURN IF ( NOT ISBLANK ( py ), DIVIDE ( [Average Order Value] - py, py ) )
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: 2. Time Intelligence
+		lineageTag: a19fa38a-146a-4a35-8db5-84c463df6a49
+
+	measure 'Sales YoY Label' =
+			VAR v = [Sales YoY %]
+			RETURN IF ( NOT HASONEVALUE ( dim_date[year] ), "Select a year to compare YoY", IF ( ISBLANK ( v ), "No prior-year data", IF ( v >= 0, "▲ ", "▼ " ) & FORMAT ( ABS ( v ), "0.0%" ) & " vs prior year" ) )
+		displayFolder: 9. Labels
+		lineageTag: 04e8e0f1-1fbe-41da-b272-d964b7319b04
+
+	measure 'Sales YoY Color' =
+			VAR v = [Sales YoY %]
+			RETURN SWITCH ( TRUE (), NOT HASONEVALUE ( dim_date[year] ) || ISBLANK ( v ), "#64748B", v >= 0, "#059669", "#DC2626" )
+		displayFolder: 9. Labels
+		lineageTag: d09ad2d2-2aa3-4aea-b37a-4d57b73bf0c8
+
+	measure 'Orders YoY Label' =
+			VAR v = [Orders YoY %]
+			RETURN IF ( NOT HASONEVALUE ( dim_date[year] ), "Select a year to compare YoY", IF ( ISBLANK ( v ), "No prior-year data", IF ( v >= 0, "▲ ", "▼ " ) & FORMAT ( ABS ( v ), "0.0%" ) & " vs prior year" ) )
+		displayFolder: 9. Labels
+		lineageTag: 5de57e86-b88b-4433-bea5-268606fd9723
+
+	measure 'Orders YoY Color' =
+			VAR v = [Orders YoY %]
+			RETURN SWITCH ( TRUE (), NOT HASONEVALUE ( dim_date[year] ) || ISBLANK ( v ), "#64748B", v >= 0, "#059669", "#DC2626" )
+		displayFolder: 9. Labels
+		lineageTag: 00384883-6cb4-4d51-9d04-27660baf0d02
+
+	measure 'AOV YoY Label' =
+			VAR v = [AOV YoY %]
+			RETURN IF ( NOT HASONEVALUE ( dim_date[year] ), "Select a year to compare YoY", IF ( ISBLANK ( v ), "No prior-year data", IF ( v >= 0, "▲ ", "▼ " ) & FORMAT ( ABS ( v ), "0.0%" ) & " vs prior year" ) )
+		displayFolder: 9. Labels
+		lineageTag: 88441434-acd0-44e1-8a49-9329e51da5cf
+
+	measure 'AOV YoY Color' =
+			VAR v = [AOV YoY %]
+			RETURN SWITCH ( TRUE (), NOT HASONEVALUE ( dim_date[year] ) || ISBLANK ( v ), "#64748B", v >= 0, "#059669", "#DC2626" )
+		displayFolder: 9. Labels
+		lineageTag: 30704e15-6feb-4efb-8433-8f1c4dafc2ee
+
+	measure 'Late Orders Label' = FORMAT ( [Late Orders], "#,0" ) & " late deliveries"
+		displayFolder: 9. Labels
+		lineageTag: c75799e5-d069-4bad-8482-29f023c3d884
+
+	measure 'Promised Days Label' = "Promised: " & FORMAT ( [Avg Estimated Days], "0.0" ) & " days"
+		displayFolder: 9. Labels
+		lineageTag: 89801bc5-ec6e-4498-b4ef-8d03de1fe1dc
+
+	measure 'Items per Order Label' = FORMAT ( [Avg Items per Order], "0.00" ) & " items per order"
+		displayFolder: 9. Labels
+		lineageTag: 7db4ea86-0a8e-4755-a311-61a9d55dca81
+
+	measure 'Freight Label' = "Freight: R$ " & FORMAT ( [Total Freight] / 1000000, "0.00" ) & "M"
+		displayFolder: 9. Labels
+		lineageTag: ae9ae45e-3a50-4818-bf5a-bb4722b8b0ae
+
+	measure 'Canceled Label' = FORMAT ( [Canceled Orders], "#,0" ) & " canceled / unavailable"
+		displayFolder: 9. Labels
+		lineageTag: d7860ed5-4e60-4e6b-ac77-aef66833b115
+
+	measure 'Late Days Label' = "Across " & FORMAT ( [Late Orders], "#,0" ) & " late orders"
+		displayFolder: 9. Labels
+		lineageTag: 0a8672c8-1fe5-4ce1-9739-5d1fd5a586ea
+
+	measure 'On-Time % (Trend)' = IF ( [Delivered Orders] >= 50, [On-Time Delivery %] )
+		formatString: 0.0%
+		displayFolder: 4. Operations
+		lineageTag: eea81c08-acb4-4692-b99e-2af886c6cef6
+
+	measure 'Insight Overview 1' =
+			VAR s = [Total Sales]
+			VAR yoy = [Sales YoY %]
+			VAR oneYr = HASONEVALUE ( dim_date[year] )
+			VAR period = IF ( oneYr, " in " & VALUES ( dim_date[year] ), " across 2016-2018" )
+			RETURN IF ( ISBLANK ( [Total Sales] ), "No data for the current selection.", "Sales reached " & "R$ " & IF ( s >= 1000000, FORMAT ( s / 1000000, "0.00" ) & "M", IF ( s >= 1000, FORMAT ( s / 1000, "0.0" ) & "K", FORMAT ( s, "0.00" ) ) ) & " from " & FORMAT ( [Total Orders], "#,0" ) & " orders" & period & IF ( oneYr && NOT ISBLANK ( yoy ), ", " & IF ( yoy >= 0, "up ", "down " ) & FORMAT ( ABS ( yoy ), "0.0%" ) & " vs the prior year.", "." ) )
+		displayFolder: 8. Insights
+		lineageTag: 28e845b3-17fb-4e7a-95f5-03326dd10cc1
+
+	measure 'Insight Overview 2' =
+			VAR tc = TOPN ( 1, VALUES ( dim_products[category_name] ), [Total Sales] )
+			VAR ts = TOPN ( 1, VALUES ( dim_customers[customer_state_name] ), [Total Sales] )
+			RETURN IF ( ISBLANK ( [Total Sales] ), "No data for the current selection.", "Top category: " & MAXX ( tc, dim_products[category_name] ) & " (" & FORMAT ( DIVIDE ( CALCULATE ( [Total Sales], tc ), [Total Sales] ), "0.0%" ) & " of sales). Top state: " & MAXX ( ts, dim_customers[customer_state_name] ) & " (" & FORMAT ( DIVIDE ( CALCULATE ( [Total Sales], ts ), [Total Sales] ), "0.0%" ) & ")." )
+		displayFolder: 8. Insights
+		lineageTag: 0489cabd-8ebc-42a1-83e8-f2b8760b5612
+
+	measure 'Insight Overview 3' = IF ( ISBLANK ( [Total Sales] ), "No data for the current selection.", FORMAT ( [On-Time Delivery %], "0.0%" ) & " of delivered orders arrived on time, taking " & FORMAT ( [Avg Delivery Days], "0.0" ) & " days on average vs " & FORMAT ( [Avg Estimated Days], "0.0" ) & " days promised." )
+		displayFolder: 8. Insights
+		lineageTag: 33022318-56f3-454a-8080-eb81ac8b0e16
+
+	measure 'Insight Sales 1' =
+			VAR tm = TOPN ( 1, VALUES ( dim_date[year_month] ), [Total Sales] )
+			VAR ms = CALCULATE ( [Total Sales], tm )
+			VAR nM = COUNTROWS ( FILTER ( VALUES ( dim_date[year_month] ), NOT ISBLANK ( [Total Sales] ) ) )
+			RETURN IF ( ISBLANK ( [Total Sales] ), "No data for the current selection.", "Best month: " & MAXX ( tm, dim_date[year_month] ) & " with " & "R$ " & IF ( ms >= 1000000, FORMAT ( ms / 1000000, "0.00" ) & "M", IF ( ms >= 1000, FORMAT ( ms / 1000, "0.0" ) & "K", FORMAT ( ms, "0.00" ) ) ) & ", " & FORMAT ( DIVIDE ( ms, DIVIDE ( [Total Sales], nM ) ) - 1, "0%" ) & " above the monthly average." )
+		displayFolder: 8. Insights
+		lineageTag: dbc93440-c090-4a10-8bb5-80251fad7afe
+
+	measure 'Insight Sales 2' =
+			VAR f = FILTER ( VALUES ( dim_date[day_name] ), NOT ISBLANK ( [Total Sales] ) )
+			VAR hi = TOPN ( 1, f, [Total Sales] )
+			VAR lo = TOPN ( 1, f, [Total Sales], ASC )
+			VAR hs = CALCULATE ( [Total Sales], hi )
+			VAR ls = CALCULATE ( [Total Sales], lo )
+			RETURN IF ( ISBLANK ( [Total Sales] ), "No data for the current selection.", MAXX ( hi, dim_date[day_name] ) & " is the busiest day (" & "R$ " & IF ( hs >= 1000000, FORMAT ( hs / 1000000, "0.00" ) & "M", IF ( hs >= 1000, FORMAT ( hs / 1000, "0.0" ) & "K", FORMAT ( hs, "0.00" ) ) ) & "); " & MAXX ( lo, dim_date[day_name] ) & " is the quietest (" & "R$ " & IF ( ls >= 1000000, FORMAT ( ls / 1000000, "0.00" ) & "M", IF ( ls >= 1000, FORMAT ( ls / 1000, "0.0" ) & "K", FORMAT ( ls, "0.00" ) ) ) & ")." )
+		displayFolder: 8. Insights
+		lineageTag: d15088ed-4ae8-45fe-aa14-37e348a88ad7
+
+	measure 'Insight Sales 3' =
+			VAR fc = TOPN ( 1, FILTER ( VALUES ( dim_products[category_name] ), [Total Orders] >= 100 ), [Freight % of Sales] )
+			RETURN IF ( ISBLANK ( [Total Sales] ), "No data for the current selection.", "Freight adds " & FORMAT ( [Freight % of Sales], "0.0%" ) & " on top of product sales" & IF ( ISEMPTY ( fc ), ".", "; heaviest in " & MAXX ( fc, dim_products[category_name] ) & " at " & FORMAT ( CALCULATE ( [Freight % of Sales], fc ), "0.0%" ) & "." ) )
+		displayFolder: 8. Insights
+		lineageTag: bc9392fc-0421-4db4-b33d-242512e4677d
+
+	measure 'Insight Customers 1' = IF ( ISBLANK ( [Total Sales] ), "No data for the current selection.", "Only " & FORMAT ( [Repeat Customer Rate %], "0.0%" ) & " of " & FORMAT ( [Total Customers], "#,0" ) & " customers ordered more than once, so growth relies on new-customer acquisition." )
+		displayFolder: 8. Insights
+		lineageTag: 3f9201a6-1a6e-43c6-8ea6-297276d91e29
+
+	measure 'Insight Customers 2' =
+			VAR t1 = TOPN ( 1, VALUES ( dim_customers[customer_state_name] ), [Total Customers] )
+			VAR t3 = TOPN ( 3, VALUES ( dim_customers[customer_state_name] ), [Total Customers] )
+			RETURN IF ( ISBLANK ( [Total Sales] ), "No data for the current selection.", MAXX ( t1, dim_customers[customer_state_name] ) & " holds " & FORMAT ( DIVIDE ( CALCULATE ( [Total Customers], t1 ), [Total Customers] ), "0.0%" ) & " of customers; the top 3 states hold " & FORMAT ( DIVIDE ( CALCULATE ( [Total Customers], t3 ), [Total Customers] ), "0.0%" ) & "." )
+		displayFolder: 8. Insights
+		lineageTag: b91b4334-041f-4aae-aa78-72eee2acb215
+
+	measure 'Insight Customers 3' =
+			VAR t = TOPN ( 1, FILTER ( VALUES ( dim_customers[customer_state_name] ), [Total Customers] >= 100 ), [Sales per Customer] )
+			VAR v = CALCULATE ( [Sales per Customer], t )
+			VAR a = [Sales per Customer]
+			RETURN IF ( ISBLANK ( [Total Sales] ), "No data for the current selection.", IF ( ISEMPTY ( t ), "Average spend per customer: " & "R$ " & IF ( a >= 1000000, FORMAT ( a / 1000000, "0.00" ) & "M", IF ( a >= 1000, FORMAT ( a / 1000, "0.0" ) & "K", FORMAT ( a, "0.00" ) ) ) & ".", "Highest spend per customer: " & MAXX ( t, dim_customers[customer_state_name] ) & " at " & "R$ " & IF ( v >= 1000000, FORMAT ( v / 1000000, "0.00" ) & "M", IF ( v >= 1000, FORMAT ( v / 1000, "0.0" ) & "K", FORMAT ( v, "0.00" ) ) ) & ", vs " & "R$ " & IF ( a >= 1000000, FORMAT ( a / 1000000, "0.00" ) & "M", IF ( a >= 1000, FORMAT ( a / 1000, "0.0" ) & "K", FORMAT ( a, "0.00" ) ) ) & " overall." ) )
+		displayFolder: 8. Insights
+		lineageTag: 1ef407df-3c37-495d-b66d-ed0ec5ce93f9
+
+	measure 'Insight Sellers 1' =
+			VAR n = ROUNDUP ( [Total Sellers] * 0.1, 0 )
+			VAR topSellers = TOPN ( n, VALUES ( dim_sellers[seller_id] ), [Total Sales] )
+			RETURN IF ( ISBLANK ( [Total Sales] ), "No data for the current selection.", "The top 10% of sellers (" & FORMAT ( n, "#,0" ) & ") generate " & FORMAT ( DIVIDE ( CALCULATE ( [Total Sales], topSellers ), [Total Sales] ), "0.0%" ) & " of sales." )
+		displayFolder: 8. Insights
+		lineageTag: 889d6253-43a7-48a9-b985-f5a5d8ca2d05
+
+	measure 'Insight Sellers 2' =
+			VAR t = TOPN ( 1, VALUES ( dim_sellers[seller_state_name] ), [Total Sales] )
+			RETURN IF ( ISBLANK ( [Total Sales] ), "No data for the current selection.", "Sellers based in " & MAXX ( t, dim_sellers[seller_state_name] ) & " ship " & FORMAT ( DIVIDE ( CALCULATE ( [Total Sales], t ), [Total Sales] ), "0.0%" ) & " of sales from " & FORMAT ( CALCULATE ( [Total Sellers], t ), "#,0" ) & " active sellers." )
+		displayFolder: 8. Insights
+		lineageTag: 00057058-8dc7-443f-87bf-ad5a2cb3ed29
+
+	measure 'Insight Sellers 3' =
+			VAR t = TOPN ( 1, FILTER ( VALUES ( dim_sellers[seller_state_name] ), [Total Orders] >= 100 ), [Avg Days to Carrier] )
+			RETURN IF ( ISBLANK ( [Total Sales] ), "No data for the current selection.", "Sellers hand orders to the carrier in " & FORMAT ( [Avg Days to Carrier], "0.0" ) & " days on average" & IF ( ISEMPTY ( t ), ".", "; slowest seller state: " & MAXX ( t, dim_sellers[seller_state_name] ) & " (" & FORMAT ( CALCULATE ( [Avg Days to Carrier], t ), "0.0" ) & " days)." ) )
+		displayFolder: 8. Insights
+		lineageTag: 8177c160-a4c7-4789-aa4b-e9959ba924d8
+
+	measure 'Insight Delivery 1' = IF ( ISBLANK ( [Total Sales] ), "No data for the current selection.", FORMAT ( [On-Time Delivery %], "0.0%" ) & " on-time rate. " & FORMAT ( [Late Orders], "#,0" ) & " late orders arrived " & FORMAT ( [Avg Days Late], "0.0" ) & " days after the promised date on average." )
+		displayFolder: 8. Insights
+		lineageTag: c6e63a7d-35b7-41c1-9d54-d7bb068b6191
+
+	measure 'Insight Delivery 2' =
+			VAR f = FILTER ( VALUES ( dim_customers[customer_state_name] ), [Delivered Orders] >= 30 )
+			VAR slow = TOPN ( 1, f, [Avg Delivery Days] )
+			VAR fast = TOPN ( 1, f, [Avg Delivery Days], ASC )
+			RETURN IF ( ISBLANK ( [Total Sales] ), "No data for the current selection.", IF ( ISEMPTY ( f ), "Not enough delivered orders to compare states.", "Slowest delivery: " & MAXX ( slow, dim_customers[customer_state_name] ) & " (" & FORMAT ( CALCULATE ( [Avg Delivery Days], slow ), "0.0" ) & " days). Fastest: " & MAXX ( fast, dim_customers[customer_state_name] ) & " (" & FORMAT ( CALCULATE ( [Avg Delivery Days], fast ), "0.0" ) & " days)." ) )
+		displayFolder: 8. Insights
+		lineageTag: a825d7d2-67a0-49ed-a46a-1e1f8050c6a7
+
+	measure 'Insight Delivery 3' =
+			VAR t = TOPN ( 1, FILTER ( VALUES ( dim_customers[customer_state_name] ), [Delivered Orders] >= 100 ), [Late Delivery %] )
+			RETURN IF ( ISBLANK ( [Total Sales] ), "No data for the current selection.", IF ( ISEMPTY ( t ), "Late-delivery rate: " & FORMAT ( [Late Delivery %], "0.0%" ) & ".", "Highest late-delivery rate: " & MAXX ( t, dim_customers[customer_state_name] ) & " at " & FORMAT ( CALCULATE ( [Late Delivery %], t ), "0.0%" ) & ", vs " & FORMAT ( [Late Delivery %], "0.0%" ) & " overall." ) )
+		displayFolder: 8. Insights
+		lineageTag: f11a8596-2a81-4a12-b82f-f91718c4a401
+
+	measure 'Insight Payments 1' =
+			VAR t = TOPN ( 1, VALUES ( fact_order_payments[payment_type_name] ), [Total Payment Value] )
+			RETURN IF ( ISBLANK ( [Total Payment Value] ), "No data for the current selection.", MAXX ( t, fact_order_payments[payment_type_name] ) & " covers " & FORMAT ( DIVIDE ( CALCULATE ( [Total Payment Value], t ), [Total Payment Value] ), "0.0%" ) & " of payment value." )
+		displayFolder: 8. Insights
+		lineageTag: cab279bd-ce7a-4f77-962e-dac90f625465
+
+	measure 'Insight Payments 2' =
+			VAR cc = CALCULATE ( [Payment Orders], fact_order_payments[payment_type] = "credit_card" )
+			VAR cc2 = CALCULATE ( [Payment Orders], fact_order_payments[payment_type] = "credit_card", fact_order_payments[payment_installments] >= 2 )
+			RETURN IF ( ISBLANK ( [Total Payment Value] ), "No data for the current selection.", FORMAT ( DIVIDE ( cc2, cc ), "0.0%" ) & " of credit-card orders are split into 2+ installments (average " & FORMAT ( [Avg Installments], "0.0" ) & ")." )
+		displayFolder: 8. Insights
+		lineageTag: 7a1ee940-1771-4073-bb8c-64c19964b796
+
+	measure 'Insight Payments 3' =
+			VAR t = TOPN ( 1, FILTER ( VALUES ( fact_order_payments[payment_type_name] ), [Payment Orders] >= 100 ), [Avg Payment Value] )
+			VAR v = CALCULATE ( [Avg Payment Value], t )
+			VAR a = [Avg Payment Value]
+			RETURN IF ( ISBLANK ( [Total Payment Value] ), "No data for the current selection.", IF ( ISEMPTY ( t ), "Average payment per order: " & "R$ " & IF ( a >= 1000000, FORMAT ( a / 1000000, "0.00" ) & "M", IF ( a >= 1000, FORMAT ( a / 1000, "0.0" ) & "K", FORMAT ( a, "0.00" ) ) ) & ".", MAXX ( t, fact_order_payments[payment_type_name] ) & " has the highest average ticket at " & "R$ " & IF ( v >= 1000000, FORMAT ( v / 1000000, "0.00" ) & "M", IF ( v >= 1000, FORMAT ( v / 1000, "0.0" ) & "K", FORMAT ( v, "0.00" ) ) ) & " (overall " & "R$ " & IF ( a >= 1000000, FORMAT ( a / 1000000, "0.00" ) & "M", IF ( a >= 1000, FORMAT ( a / 1000, "0.0" ) & "K", FORMAT ( a, "0.00" ) ) ) & ")." ) )
+		displayFolder: 8. Insights
+		lineageTag: ad036195-20c3-43bd-9279-4f2441c789ed
+
+	column order_id
+		dataType: string
+		lineageTag: c1600cfa-3075-462d-8f52-defe47c67c3c
+		summarizeBy: none
+		sourceColumn: order_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column order_item_id
+		dataType: int64
+		formatString: 0
+		lineageTag: 1a781d87-eebc-47c8-ba1f-39133031da77
+		summarizeBy: none
+		sourceColumn: order_item_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column product_id
+		dataType: string
+		lineageTag: 15741911-3847-4d1f-b22e-04096f2f0ded
+		summarizeBy: none
+		sourceColumn: product_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column seller_id
+		dataType: string
+		lineageTag: 7f997c76-1a06-4e95-af2d-d00a0ed3e923
+		summarizeBy: none
+		sourceColumn: seller_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column customer_id
+		dataType: string
+		lineageTag: 3dc8d0a7-819f-4012-be97-0ea2e4dd04a6
+		summarizeBy: none
+		sourceColumn: customer_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column order_status
+		dataType: string
+		lineageTag: 2c84f91e-dbe1-4ba9-a4ba-1f0674323c6a
+		summarizeBy: none
+		sourceColumn: order_status
+
+		annotation SummarizationSetBy = Automatic
+
+	column order_purchase_timestamp
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: db2b5b0c-96b5-4ab7-a361-e9f0b1ef2a06
+		summarizeBy: none
+		sourceColumn: order_purchase_timestamp
+
+		variation Variation
+			isDefault
+			relationship: 2a29c920-a60d-47d6-a18d-d0628747b50c
+			defaultHierarchy: LocalDateTable_63127746-550c-4491-95ae-8a3e3d515f19.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+	column order_date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 7c4a8718-fe0d-4466-b61b-c85f65d113c7
+		summarizeBy: none
+		sourceColumn: order_date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column order_approved_at
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: ad2fea2a-ea26-4f80-bc20-e022b9bcccc7
+		summarizeBy: none
+		sourceColumn: order_approved_at
+
+		variation Variation
+			isDefault
+			relationship: f9fc40e5-90fe-4d28-ad92-48bfd424437f
+			defaultHierarchy: LocalDateTable_0d35f6b0-c8a3-47ae-8043-1a084b7bf24f.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+	column order_delivered_carrier_date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 231dc15b-852e-4476-bce0-2495ec34b466
+		summarizeBy: none
+		sourceColumn: order_delivered_carrier_date
+
+		variation Variation
+			isDefault
+			relationship: e4b59fb7-eaa4-4c80-a158-43b36e437d3e
+			defaultHierarchy: LocalDateTable_be1bf75d-450a-4903-b641-37f1987bf843.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+	column order_delivered_customer_date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: c13113c8-3aa6-44e8-87c9-359d530b8626
+		summarizeBy: none
+		sourceColumn: order_delivered_customer_date
+
+		variation Variation
+			isDefault
+			relationship: 570b8b6d-5b01-4c00-a8d8-10e064d6140c
+			defaultHierarchy: LocalDateTable_6d6b1a80-9773-4055-b004-94d3cb0d725b.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+	column order_estimated_delivery_date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 3d236ffd-ee4b-434c-9f30-6fc9fbcda95e
+		summarizeBy: none
+		sourceColumn: order_estimated_delivery_date
+
+		variation Variation
+			isDefault
+			relationship: 230209e9-ba47-48e5-a809-a6a0379cbe4d
+			defaultHierarchy: LocalDateTable_b0b795bf-5049-49c4-8ad5-65bb17e8ceab.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+	column price
+		dataType: double
+		lineageTag: d7988096-a4a0-4b48-8134-8d0e1c732b13
+		summarizeBy: sum
+		sourceColumn: price
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column freight_value
+		dataType: double
+		lineageTag: 2601080e-725f-498e-8a28-bad32b889a49
+		summarizeBy: sum
+		sourceColumn: freight_value
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column total_item_value
+		dataType: double
+		lineageTag: dc500d34-8fd2-4e9d-8cd6-0bf9166917f7
+		summarizeBy: sum
+		sourceColumn: total_item_value
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column delivery_days = IF ( ISBLANK ( fact_order_items[order_delivered_customer_date] ), BLANK (), ( fact_order_items[order_delivered_customer_date] - fact_order_items[order_purchase_timestamp] ) * 1.0 )
+		dataType: double
+		formatString: 0.0
+		displayFolder: Delivery
+		lineageTag: 63e39293-d5b7-45cd-9e94-fc77fb2d07a2
+		summarizeBy: none
+
+	column days_to_carrier = IF ( ISBLANK ( fact_order_items[order_delivered_carrier_date] ), BLANK (), ( fact_order_items[order_delivered_carrier_date] - fact_order_items[order_purchase_timestamp] ) * 1.0 )
+		dataType: double
+		formatString: 0.0
+		displayFolder: Delivery
+		lineageTag: 36912322-1ec1-4995-8c71-4a077f1fed41
+		summarizeBy: none
+
+	column estimated_days = IF ( ISBLANK ( fact_order_items[order_estimated_delivery_date] ), BLANK (), ( fact_order_items[order_estimated_delivery_date] - fact_order_items[order_purchase_timestamp] ) * 1.0 )
+		dataType: double
+		formatString: 0.0
+		displayFolder: Delivery
+		lineageTag: 4dcec6ce-7e88-40fe-b07b-3934484a4898
+		summarizeBy: none
+
+	column days_late = IF ( ISBLANK ( fact_order_items[order_delivered_customer_date] ) || ISBLANK ( fact_order_items[order_estimated_delivery_date] ), BLANK (), INT ( fact_order_items[order_delivered_customer_date] ) - INT ( fact_order_items[order_estimated_delivery_date] ) )
+		dataType: int64
+		displayFolder: Delivery
+		lineageTag: 874d0d38-fb5e-42f3-9e40-8468866cfeb4
+		summarizeBy: none
+
+	column delivery_status =
+			VAR d = fact_order_items[days_late]
+			RETURN SWITCH ( TRUE (), ISBLANK ( d ), "Not delivered", d > 0, "Late", "On time" )
+		dataType: string
+		displayFolder: Delivery
+		lineageTag: 3e7c730c-236f-414c-a806-f5b02b46625a
+		summarizeBy: none
+
+	column delivery_speed_band =
+			VAR d = fact_order_items[delivery_days]
+			RETURN SWITCH ( TRUE (), ISBLANK ( d ), "Not delivered", d <= 7, "0-7 days", d <= 14, "8-14 days", d <= 21, "15-21 days", d <= 30, "22-30 days", "30+ days" )
+		dataType: string
+		displayFolder: Delivery
+		lineageTag: 6330d59f-d738-46f0-aa35-6d322822651c
+		summarizeBy: none
+		sortByColumn: delivery_speed_band_sort
+
+	column delivery_speed_band_sort =
+			VAR d = fact_order_items[delivery_days]
+			RETURN SWITCH ( TRUE (), ISBLANK ( d ), 6, d <= 7, 1, d <= 14, 2, d <= 21, 3, d <= 30, 4, 5 )
+		dataType: int64
+		isHidden
+		lineageTag: 7d8a0630-2b15-4526-9195-64248c5f17da
+		summarizeBy: none
+
+	partition fact_order_items = m
+		mode: import
+		source =
+				let
+				    Source = GoogleBigQuery.Database([Implementation="2.0"]),
+				    #"angelic-digit-481505-r7_Database" = Source{[Name="angelic-digit-481505-r7",Kind="Database"]}[Data],
+				    olist_analytics_Schema = #"angelic-digit-481505-r7_Database"{[Name="olist_analytics",Kind="Schema"]}[Data],
+				    fact_order_items_Table = olist_analytics_Schema{[Name="fact_order_items",Kind="Table"]}[Data]
+				in
+				    fact_order_items_Table
+
+	annotation PBI_ResultType = Table
+

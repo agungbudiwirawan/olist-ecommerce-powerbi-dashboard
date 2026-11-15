@@ -1,0 +1,110 @@
+table fact_order_payments
+	lineageTag: 5f4854eb-f089-4df9-8d73-9b599f95db79
+
+	/// Payments for the orders in the current selection (no direct relationship; order ids passed with TREATAS).
+	measure 'Total Payment Value' = CALCULATE ( SUM ( fact_order_payments[payment_value] ), TREATAS ( VALUES ( fact_order_items[order_id] ), fact_order_payments[order_id] ) )
+		formatString: "R$"\ #,0.00;-"R$"\ #,0.00;"R$"\ #,0.00
+		displayFolder: 6. Payments
+		lineageTag: e91a0ee8-031e-4aea-94c0-3f5326fda14b
+
+	measure 'Payment Orders' = CALCULATE ( DISTINCTCOUNT ( fact_order_payments[order_id] ), TREATAS ( VALUES ( fact_order_items[order_id] ), fact_order_payments[order_id] ) )
+		formatString: #,0
+		displayFolder: 6. Payments
+		lineageTag: 2a75715f-54d1-4dbd-a7ef-f19c5fc40191
+
+	measure 'Payment Share %' = DIVIDE ( [Total Payment Value], CALCULATE ( [Total Payment Value], ALL ( fact_order_payments[payment_type] ) ) )
+		formatString: 0.0%
+		displayFolder: 6. Payments
+		lineageTag: c0582dba-3b47-4241-bfc9-e7bb95ae7f53
+
+	/// Average installments on credit-card payments.
+	measure 'Avg Installments' = CALCULATE ( AVERAGE ( fact_order_payments[payment_installments] ), TREATAS ( VALUES ( fact_order_items[order_id] ), fact_order_payments[order_id] ), fact_order_payments[payment_type] = "credit_card" )
+		formatString: 0.0
+		displayFolder: 6. Payments
+		lineageTag: 9b7a853b-70ab-44ea-b449-2a5ed62fad25
+
+	measure 'Avg Payment Value' = DIVIDE ( [Total Payment Value], [Payment Orders] )
+		formatString: "R$"\ #,0.00;-"R$"\ #,0.00;"R$"\ #,0.00
+		displayFolder: 6. Payments
+		lineageTag: fea6d588-2c16-473d-af7b-08169c03c350
+
+	column order_id
+		dataType: string
+		lineageTag: 7f745c47-4281-47bd-9e18-7ceac020e685
+		summarizeBy: none
+		sourceColumn: order_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column payment_sequential
+		dataType: int64
+		formatString: 0
+		lineageTag: cf41850f-5ab7-428e-bfa4-f6d300aa5675
+		summarizeBy: sum
+		sourceColumn: payment_sequential
+
+		annotation SummarizationSetBy = Automatic
+
+	column payment_type
+		dataType: string
+		lineageTag: e6c3a054-ecad-4263-8e81-6ab32e0b8b28
+		summarizeBy: none
+		sourceColumn: payment_type
+
+		annotation SummarizationSetBy = Automatic
+
+	column payment_installments
+		dataType: int64
+		formatString: 0
+		lineageTag: 9e7b8bd7-02c6-4d84-8bf5-c50cdf142656
+		summarizeBy: sum
+		sourceColumn: payment_installments
+
+		annotation SummarizationSetBy = Automatic
+
+	column payment_value
+		dataType: double
+		lineageTag: ea0b92ac-22ba-4960-a6a0-9bcb07b1be2a
+		summarizeBy: sum
+		sourceColumn: payment_value
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column payment_type_name = VAR t = SUBSTITUTE ( fact_order_payments[payment_type], "_", " " ) RETURN IF ( ISBLANK ( t ) || t = "", "Unknown", CONCATENATEX ( GENERATESERIES ( 1, LEN ( t ) ), VAR i = [Value] VAR c = MID ( t, i, 1 ) RETURN IF ( MID ( " " & t, i, 1 ) = " ", UPPER ( c ), LOWER ( c ) ), "", [Value], ASC ) )
+		dataType: string
+		displayFolder: Names
+		lineageTag: 352e65f8-a9bb-4f29-b3f1-dd932207ed5a
+		summarizeBy: none
+
+	column installment_band =
+			VAR n = fact_order_payments[payment_installments]
+			RETURN SWITCH ( TRUE (), n <= 1, "1x (full)", n <= 3, "2-3x", n <= 6, "4-6x", n <= 10, "7-10x", "11x+" )
+		dataType: string
+		displayFolder: Names
+		lineageTag: ece09790-7fe9-451e-a596-ad4a64065a62
+		summarizeBy: none
+		sortByColumn: installment_band_sort
+
+	column installment_band_sort =
+			VAR n = fact_order_payments[payment_installments]
+			RETURN SWITCH ( TRUE (), n <= 1, 1, n <= 3, 2, n <= 6, 3, n <= 10, 4, 5 )
+		dataType: int64
+		isHidden
+		lineageTag: 1a04290b-6fce-4dcb-aa90-d6079d719076
+		summarizeBy: none
+
+	partition fact_order_payments = m
+		mode: import
+		source =
+				let
+				    Source = GoogleBigQuery.Database([Implementation="2.0"]),
+				    #"angelic-digit-481505-r7_Database" = Source{[Name="angelic-digit-481505-r7",Kind="Database"]}[Data],
+				    olist_analytics_Schema = #"angelic-digit-481505-r7_Database"{[Name="olist_analytics",Kind="Schema"]}[Data],
+				    fact_order_payments_Table = olist_analytics_Schema{[Name="fact_order_payments",Kind="Table"]}[Data]
+				in
+				    fact_order_payments_Table
+
+	annotation PBI_ResultType = Table
+

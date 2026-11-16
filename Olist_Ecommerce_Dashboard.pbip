@@ -3,7 +3,7 @@
   "artifacts": [
     {
       "report": {
-        "path": "Olist_Ecommerce_Dashboard.Report"
+        "path": "olist_dashboard_v2.Report"
       }
     }
   ],

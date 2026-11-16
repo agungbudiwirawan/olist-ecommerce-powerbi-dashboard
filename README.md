@@ -2,9 +2,9 @@
 
 Power BI dashboard for the [Olist Brazilian E-Commerce dataset](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) (around 100K orders, 2016–2018). The data comes from a star schema I built in Google BigQuery.
 
-![Overview](images/01-overview.png)
+![Dashboard demo](images/demo.gif)
 
-Demo video: [images/demo.mp4](images/demo.mp4)
+Full demo video: [images/demo.mp4](images/demo.mp4)
 
 ## Pages
 
@@ -28,9 +28,9 @@ The DAX covers time intelligence (YoY, MoM, YTD, moving average), customer reten
 
 | | |
 |---|---|
-| ![Sales & Product](images/02-sales-product.png) | ![Customers](images/03-customers.png) |
-| ![Sellers](images/04-sellers.png) | ![Delivery](images/05-delivery.png) |
-| ![Payments](images/06-payments.png) | |
+| ![Overview](images/01-overview.png) | ![Sales & Product](images/02-sales-product.png) |
+| ![Customers](images/03-customers.png) | ![Sellers](images/04-sellers.png) |
+| ![Delivery](images/05-delivery.png) | ![Payments](images/06-payments.png) |
 
 ## How to open
 

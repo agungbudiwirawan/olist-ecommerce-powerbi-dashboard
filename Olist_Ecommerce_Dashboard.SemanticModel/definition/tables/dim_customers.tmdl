@@ -1,7 +1,7 @@
 table dim_customers
 	lineageTag: b6e99e93-5124-4521-866e-e976a9982654
 
-	/// Unique customers who ordered in the current selection. Now responds to date, product and seller filters.
+	/// Unique customers who ordered in the current selection, filtered by date, product and seller.
 	measure 'Total Customers' = COUNTROWS ( SUMMARIZE ( fact_order_items, dim_customers[customer_unique_id] ) )
 		formatString: #,0
 		displayFolder: 3. Customers

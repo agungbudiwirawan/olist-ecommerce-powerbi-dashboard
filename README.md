@@ -8,12 +8,12 @@ Full demo video: [images/demo.mp4](images/demo.mp4)
 
 ## Pages
 
-- **Overview**: sales, orders, customers, AOV and on-time delivery, compared with the previous year
-- **Sales & Product**: monthly sales vs the previous year, sales by weekday, category performance
-- **Customers**: new vs returning customers, customers by state, top cities
-- **Sellers**: seller leaderboard, seller locations, time to hand orders to the carrier
-- **Delivery**: on-time rate, delivery time, late deliveries by state
-- **Payments**: payment mix, installments, payment value over time
+- Overview: sales, orders, customers, AOV and on-time delivery, compared with the previous year
+- Sales & Product: monthly sales vs the previous year, sales by weekday, category performance
+- Customers: new vs returning customers, customers by state, top cities
+- Sellers: seller leaderboard, seller locations, time to hand orders to the carrier
+- Delivery: on-time rate, delivery time, late deliveries by state
+- Payments: payment mix, installments, payment value over time
 
 Each page has filters for year, month and state. Below the KPIs, short text insights update with the filters.
 

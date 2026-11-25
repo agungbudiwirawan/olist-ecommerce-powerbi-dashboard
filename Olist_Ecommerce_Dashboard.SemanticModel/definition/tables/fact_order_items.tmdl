@@ -46,7 +46,7 @@ table fact_order_items
 		displayFolder: 4. Operations
 		lineageTag: e2020ca8-a49d-4e31-965a-8895c141e778
 
-	/// Items sold (one row per item). Was SUM(order_item_id), which inflated the count by ~20%.
+	/// Items sold, one row per item. SUM(order_item_id) would overcount by about 20%.
 	measure 'Total Items Sold' = COUNTROWS ( fact_order_items )
 		formatString: #,0
 		displayFolder: 1. Sales
